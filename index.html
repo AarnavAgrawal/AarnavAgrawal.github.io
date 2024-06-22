@@ -201,44 +201,46 @@
             const annualMileage = parseInt(document.getElementById('annualMileage').value);
             const yearsOfOperation = parseInt(document.getElementById('yearsOfOperation').value);
 
-            // Determine fuel type based on vehicle class
             const fuelType = vehicleClass <= 4 ? 'Gasoline' : 'Diesel';
-
-            // CI(fuel) values
-            const CI_fuel = {
-                'Diesel': {2021: 0.33, 2022: 0.326, 2023: 0.32, 2024: 0.316},
-                'Gasoline': {2021: 0.326, 2022: 0.322, 2023: 0.317, 2024: 0.313}
-            };
-
-            // CI(electricity) values
+            const CI_fuel = {'Diesel': {2021: 0.33, 2022: 0.326, 2023: 0.32, 2024: 0.316}, 'Gasoline': {2021: 0.326, 2022: 0.322, 2023: 0.317, 2024: 0.313}};
             const CI_electricity = {2021: 0.273, 2022: 0.276, 2023: 0.291, 2024: 0.289};
-
-            // EER values
             const EER = {1: 3.4, 2: 3.4, 3: 3.4, 4: 5, 5: 5, 6: 5, 7: 5, 8: 5};
+            const kWh_per_mile = {1: 0.286, 2: 0.417, 3: 0.455, 4: 0.5, 5: 0.588, 6: 0.769, 7: 1, 8: 1.25};
 
-            // kWh/mile values
-            const kWh_per_mile = {
-                1: 0.286, 2: 0.417, 3: 0.455, 4: 0.5, 5: 0.588, 6: 0.769, 7: 1, 8: 1.25
-            };
-
-            // Energy consumed
             const energyConsumed = kWh_per_mile[vehicleClass] * annualMileage;
-
-            // Carbon emissions avoided
             const carbonEmissionsAvoided = (CI_fuel[fuelType][yearsOfOperation]*EER[vehicleClass] - CI_electricity[yearsOfOperation]) * energyConsumed;
-
-            // LCFS credits generated
             const lcfsCreditsGenerated = Math.floor((carbonEmissionsAvoided * numVehicles) / 1000);
-
-            // Coefficient for LCFS credits to dollars
             const lcfsCreditCoefficient = 66;
-
-            // Expected value of LCFS credits
             const valueOfLcfsCredits = lcfsCreditsGenerated * lcfsCreditCoefficient;
 
             document.getElementById('emissionsValue').textContent = `${Math.round(carbonEmissionsAvoided)} kilograms`;
             document.getElementById('lcfsCreditsValue').textContent = Math.round(lcfsCreditsGenerated);
             document.getElementById('valueCredits').textContent = `$${Math.round(valueOfLcfsCredits)}`;
+
+            const formData = {
+                vehicleClass,
+                numVehicles,
+                annualMileage,
+                yearsOfOperation,
+                carbonEmissionsAvoided: Math.round(carbonEmissionsAvoided),
+                lcfsCreditsGenerated: Math.round(lcfsCreditsGenerated),
+                valueOfLcfsCredits: Math.round(valueOfLcfsCredits)
+            };
+
+            fetch('/.netlify/functions/submit-form', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.text())
+            .then(data => {
+                console.log('Success:', data);
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
         });
     </script>
 </body>
